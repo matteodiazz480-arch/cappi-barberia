@@ -1,11 +1,10 @@
 import type { YouTubeVideo } from '@/types'
 
-const API_URL = import.meta.env.VITE_API_URL as string | undefined
-
+// Ruta relativa: en producción la resuelve la función serverless en
+// frontend/api/youtube/latest.ts (mismo dominio); en desarrollo local el
+// proxy de Vite (ver vite.config.ts) la redirige al backend Express.
 export async function getLatestVideos(limit = 6): Promise<YouTubeVideo[]> {
-  if (!API_URL) return []
-
-  const response = await fetch(`${API_URL}/api/youtube/latest?limit=${limit}`)
+  const response = await fetch(`/api/youtube/latest?limit=${limit}`)
   if (!response.ok) throw new Error('No se pudieron cargar los videos.')
   return response.json()
 }

@@ -98,7 +98,9 @@ cd frontend
 node scripts/generate-icons.mjs
 ```
 
-## 3. Backend (últimos videos de YouTube)
+## 3. Backend (últimos videos de YouTube) — solo desarrollo local
+
+En producción (Vercel) esto lo resuelve automáticamente la función serverless `frontend/api/youtube/latest.ts` — no hace falta desplegar `backend/` por separado. `backend/` solo se usa en desarrollo local, con el proxy de Vite (`/api` → `http://localhost:4000`, ver `frontend/vite.config.ts`).
 
 Es opcional: sin él, la sección "Últimos videos" simplemente queda vacía con su estado vacío correspondiente. No requiere API key — usa el feed RSS público del canal.
 
@@ -117,9 +119,22 @@ YOUTUBE_CHANNEL_ID=@CappiYutu
 ```
 
 ```bash
-npm run dev     # desarrollo
-npm run build && npm run start   # producción
+npm run dev     # desarrollo, en paralelo al frontend
 ```
+
+## Desplegar en Vercel
+
+Un solo proyecto de Vercel alcanza — no uses el preset de "multiple services" (es para monorepos con varios servidores corriendo todo el tiempo; acá el "backend" es una sola función serverless).
+
+1. Importá el repo en Vercel.
+2. **Root Directory**: `frontend` (Vercel detecta Vite automáticamente, sin configuración extra).
+3. **Environment Variables** (Settings → Environment Variables):
+   ```
+   VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+   VITE_SUPABASE_ANON_KEY=tu-anon-key
+   YOUTUBE_CHANNEL_ID=@CappiYutu
+   ```
+4. Deploy. `frontend/api/youtube/latest.ts` se publica solo como Edge Function en `/api/youtube/latest` — no requiere `vercel.json`.
 
 ## Panel de administrador
 

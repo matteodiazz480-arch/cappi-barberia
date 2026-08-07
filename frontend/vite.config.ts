@@ -60,5 +60,13 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    proxy: {
+      // En dev, /api/* va al backend Express local (npm run dev:backend).
+      // En Vercel, /api/* lo resuelve la función serverless en frontend/api/.
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+    },
   },
 })
