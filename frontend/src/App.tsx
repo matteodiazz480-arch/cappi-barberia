@@ -6,6 +6,8 @@ import { AdminLayout } from '@/layouts/AdminLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Spinner } from '@/components/ui/Spinner'
 import { SplashScreen } from '@/components/SplashScreen'
+import { ConfigMissingScreen } from '@/components/ConfigMissingScreen'
+import { isSupabaseConfigured } from '@/api/supabase'
 
 const MIN_SPLASH_DURATION_MS = 1400
 
@@ -49,6 +51,10 @@ function App() {
     const timer = setTimeout(() => setShowSplash(false), MIN_SPLASH_DURATION_MS)
     return () => clearTimeout(timer)
   }, [])
+
+  if (!isSupabaseConfigured) {
+    return <ConfigMissingScreen />
+  }
 
   return (
     <>
