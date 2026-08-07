@@ -1,6 +1,13 @@
 # Dependencies
 node_modules
 
+# package-lock.json excluido a propósito: generado en Windows, tiene un bug
+# conocido de npm (github.com/npm/cli/issues/4828) donde las dependencias
+# opcionales nativas (ej. bindings de rolldown/vite) quedan ancladas a la
+# plataforma que generó el lockfile y rompen el build en Linux (Vercel).
+# Sin lockfile committeado, cada entorno resuelve el suyo fresco.
+package-lock.json
+
 # Build output
 dist
 dist-ssr
