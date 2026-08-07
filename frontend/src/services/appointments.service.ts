@@ -41,6 +41,15 @@ export async function deleteAppointment(id: string): Promise<void> {
   if (error) throw error
 }
 
+/** IDs de servicios que tienen al menos un turno asociado (histórico o
+ * vigente). Se usa para saber qué servicios no se pueden borrar sin perder
+ * el historial (la FK appointments.service_id lo impide). */
+export async function getServiceIdsWithAppointments(): Promise<Set<string>> {
+  const { data, error } = await supabase.from('appointments').select('service_id')
+  if (error) throw error
+  return new Set((data ?? []).map((row) => row.service_id))
+}
+
 export function subscribeToNewAppointments(onInsert: () => void) {
   const channel = supabase
     .channel('appointments-realtime')

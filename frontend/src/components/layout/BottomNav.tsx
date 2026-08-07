@@ -1,16 +1,20 @@
 import { NavLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Home, Scissors, CalendarCheck, PlaySquare } from 'lucide-react'
+import { Home, Scissors, CalendarCheck, PlaySquare, User } from 'lucide-react'
 import { cn } from '@/utils/cn'
-
-const items = [
-  { to: '/', label: 'Inicio', icon: Home, end: true },
-  { to: '/servicios', label: 'Servicios', icon: Scissors, end: false },
-  { to: '/reservar', label: 'Reservar', icon: CalendarCheck, end: false },
-  { to: '/videos', label: 'Videos', icon: PlaySquare, end: false },
-]
+import { useClientAuth } from '@/context/ClientAuthContext'
 
 export function BottomNav() {
+  const { isAuthenticated } = useClientAuth()
+
+  const items = [
+    { to: '/', label: 'Inicio', icon: Home, end: true },
+    { to: '/servicios', label: 'Servicios', icon: Scissors, end: false },
+    { to: '/reservar', label: 'Reservar', icon: CalendarCheck, end: false },
+    { to: '/videos', label: 'Videos', icon: PlaySquare, end: false },
+    { to: isAuthenticated ? '/cuenta' : '/cuenta/login', label: 'Mi cuenta', icon: User, end: false },
+  ]
+
   return (
     <nav
       className="glass safe-bottom fixed inset-x-0 bottom-0 z-50 border-t border-ink-100 lg:hidden"

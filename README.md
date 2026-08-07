@@ -51,7 +51,8 @@ npm run build           # build de producción del frontend
    values ('<uuid-del-usuario-que-creaste>', 'Santiago Castro', 'admin');
    ```
 4. Confirmá que **Realtime** esté habilitado para `appointments` (Database → Replication) — el script lo activa solo, pero conviene verificarlo.
-5. Copiá la **Project URL** y la **anon public key** (Settings → API → Project API keys).
+5. Ejecutá también [`supabase/client_accounts.sql`](supabase/client_accounts.sql) (aditivo, no borra nada) — crea el sistema de cuentas de cliente (login con teléfono + contraseña, sin email). Sin este paso, `/cuenta/registro` y `/cuenta/login` no van a funcionar.
+6. Copiá la **Project URL** y la **anon public key** (Settings → API → Project API keys).
 
 ### Usuario administrador por defecto
 
@@ -147,6 +148,17 @@ Accedé en `/admin/login` con las credenciales de arriba. El panel incluye:
 - **Configuración**: datos generales (incluye teléfono y email), redes sociales, horarios semanales de atención.
 
 Las notificaciones de nuevos turnos llegan en tiempo real vía Supabase Realtime, sin recargar la página.
+
+En **Agenda**, además de la lista de turnos, hay una grilla con todos los horarios del día (según los horarios semanales configurados) marcando cada uno como disponible / reservado / bloqueado — se puede bloquear un horario libre o desbloquear uno bloqueado tocándolo directamente.
+
+## Cuentas de cliente
+
+Sistema de login propio para clientes — **teléfono + contraseña, sin email**, independiente de Supabase Auth (que es email/OTP-céntrico). Ver `supabase/client_accounts.sql`.
+
+- `/cuenta/registro` y `/cuenta/login`: alta e ingreso.
+- `/cuenta`: turnos próximos, historial, cancelar (solo con más de 24hs de anticipación), editar perfil, cambiar contraseña, cerrar sesión.
+- Si un cliente reserva un turno (o ya lo había hecho antes de registrarse) usando el **mismo teléfono** de su cuenta, el turno se asocia automáticamente — no hace falta "vincular" nada a mano.
+- Cada acción valida un token de sesión propio (tabla `client_sessions`) del lado del servidor antes de tocar cualquier dato; un cliente nunca puede ver ni cancelar turnos de otro.
 
 ## Splash screen
 

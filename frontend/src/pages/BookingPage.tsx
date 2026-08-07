@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button'
 import { createAppointment } from '@/services/booking.service'
 import { getActiveServices } from '@/services/services.service'
 import { useToast } from '@/context/ToastContext'
+import { useClientAuth } from '@/context/ClientAuthContext'
 import { toDateInputValue } from '@/utils/format'
 import type { ContactFormValues } from '@/utils/validation'
 import type { Service } from '@/types'
@@ -31,6 +32,7 @@ export function BookingPage() {
     null
   )
   const { showToast } = useToast()
+  const { profile: clientProfile } = useClientAuth()
 
   // Comparte cache con ServiceStep (misma queryKey): permite preseleccionar
   // automáticamente el servicio elegido en /servicios sin pedirle al usuario
@@ -136,7 +138,12 @@ export function BookingPage() {
 
               {step === 3 && (
                 <ContactStep
-                  defaultValues={{ firstName: '', lastName: '', phone: '', notes: '' }}
+                  defaultValues={{
+                    firstName: clientProfile?.firstName ?? '',
+                    lastName: clientProfile?.lastName ?? '',
+                    phone: clientProfile?.phone ?? '',
+                    notes: '',
+                  }}
                   onSubmit={handleContactSubmit}
                   isSubmitting={mutation.isPending}
                 />

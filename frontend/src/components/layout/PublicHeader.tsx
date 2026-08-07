@@ -2,8 +2,10 @@ import { Link, NavLink } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { User } from 'lucide-react'
 import { getBusinessSettings } from '@/services/settings.service'
 import { cn } from '@/utils/cn'
+import { useClientAuth } from '@/context/ClientAuthContext'
 import logo from '@/assets/logo.png'
 
 const navItems = [
@@ -18,6 +20,7 @@ export function PublicHeader() {
     queryFn: getBusinessSettings,
     staleTime: 5 * 60 * 1000,
   })
+  const { isAuthenticated, profile } = useClientAuth()
 
   const [scrolled, setScrolled] = useState(false)
 
@@ -77,6 +80,14 @@ export function PublicHeader() {
             </NavLink>
           ))}
         </nav>
+
+        <Link
+          to={isAuthenticated ? '/cuenta' : '/cuenta/login'}
+          className="hidden items-center gap-2 rounded-full border border-ink-200 px-4 py-2.5 text-[15px] font-medium text-ink-700 transition-colors hover:border-ink-300 hover:bg-ink-50 lg:inline-flex"
+        >
+          <User className="size-4" />
+          {isAuthenticated ? profile?.firstName : 'Mi cuenta'}
+        </Link>
       </div>
     </header>
   )

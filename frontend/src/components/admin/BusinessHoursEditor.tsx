@@ -38,7 +38,7 @@ export function BusinessHoursEditor() {
             </label>
 
             {day.is_open ? (
-              <div className="flex flex-1 items-center gap-2">
+              <div className="flex flex-1 flex-wrap items-center gap-2">
                 <input
                   type="time"
                   value={day.open_time?.slice(0, 5) ?? '09:00'}
@@ -52,6 +52,18 @@ export function BusinessHoursEditor() {
                   onChange={(e) => handleChange(day.id, { close_time: `${e.target.value}:00` })}
                   className="h-9 rounded-lg border border-ink-200 px-2 text-sm"
                 />
+                <select
+                  value={day.slot_interval_minutes}
+                  onChange={(e) => handleChange(day.id, { slot_interval_minutes: Number(e.target.value) })}
+                  className="h-9 rounded-lg border border-ink-200 px-2 text-sm text-ink-700"
+                  title="Duración de cada turno disponible"
+                >
+                  <option value={15}>cada 15 min</option>
+                  <option value={20}>cada 20 min</option>
+                  <option value={30}>cada 30 min</option>
+                  <option value={45}>cada 45 min</option>
+                  <option value={60}>cada 60 min</option>
+                </select>
               </div>
             ) : (
               <span className="flex-1 text-sm text-ink-400">Cerrado</span>

@@ -7,6 +7,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Spinner } from '@/components/ui/Spinner'
 import { SplashScreen } from '@/components/SplashScreen'
 import { ConfigMissingScreen } from '@/components/ConfigMissingScreen'
+import { ProtectedClientRoute } from '@/components/ProtectedClientRoute'
 import { isSupabaseConfigured } from '@/api/supabase'
 
 const MIN_SPLASH_DURATION_MS = 1400
@@ -16,6 +17,16 @@ const ServicesPage = lazy(() => import('@/pages/ServicesPage').then((m) => ({ de
 const BookingPage = lazy(() => import('@/pages/BookingPage').then((m) => ({ default: m.BookingPage })))
 const VideosPage = lazy(() => import('@/pages/VideosPage').then((m) => ({ default: m.VideosPage })))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
+
+const ClientLoginPage = lazy(() =>
+  import('@/pages/ClientLoginPage').then((m) => ({ default: m.ClientLoginPage }))
+)
+const ClientRegisterPage = lazy(() =>
+  import('@/pages/ClientRegisterPage').then((m) => ({ default: m.ClientRegisterPage }))
+)
+const ClientAccountPage = lazy(() =>
+  import('@/pages/ClientAccountPage').then((m) => ({ default: m.ClientAccountPage }))
+)
 
 const AdminLoginPage = lazy(() =>
   import('@/pages/admin/AdminLoginPage').then((m) => ({ default: m.AdminLoginPage }))
@@ -67,6 +78,16 @@ function App() {
             <Route path="/servicios" element={<ServicesPage />} />
             <Route path="/reservar" element={<BookingPage />} />
             <Route path="/videos" element={<VideosPage />} />
+            <Route path="/cuenta/login" element={<ClientLoginPage />} />
+            <Route path="/cuenta/registro" element={<ClientRegisterPage />} />
+            <Route
+              path="/cuenta"
+              element={
+                <ProtectedClientRoute>
+                  <ClientAccountPage />
+                </ProtectedClientRoute>
+              }
+            />
           </Route>
 
           <Route path="/admin/login" element={<AdminLoginPage />} />

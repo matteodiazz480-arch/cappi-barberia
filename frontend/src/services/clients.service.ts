@@ -4,7 +4,7 @@ import type { ClientWithStats } from '@/types'
 export async function getClientsWithStats(search?: string): Promise<ClientWithStats[]> {
   const { data: clients, error } = await supabase
     .from('clients')
-    .select('*')
+    .select('id, first_name, last_name, phone, notes, created_at')
     .order('created_at', { ascending: false })
 
   if (error) throw error

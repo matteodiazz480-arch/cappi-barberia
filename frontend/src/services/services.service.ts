@@ -36,5 +36,12 @@ export async function updateService(id: string, input: Partial<Service>): Promis
 
 export async function deleteService(id: string): Promise<void> {
   const { error } = await supabase.from('services').delete().eq('id', id)
-  if (error) throw error
+  if (error) {
+    if (error.code === '23503') {
+      throw new Error(
+        'No se puede eliminar: este servicio tiene turnos asociados. Desactivalo en su lugar para ocultarlo sin perder el historial.'
+      )
+    }
+    throw error
+  }
 }

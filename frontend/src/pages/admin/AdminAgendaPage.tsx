@@ -1,19 +1,22 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { addDays, subDays } from 'date-fns'
-import { ChevronLeft, ChevronRight, CalendarX2, Lock, Trash2, CalendarDays } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CalendarX2, Lock, Trash2, CalendarDays, Clock } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import { getAppointmentsInRange, updateAppointmentStatus, rescheduleAppointment, deleteAppointment } from '@/services/appointments.service'
 import { getBlockedSlots, createBlockedSlot, deleteBlockedSlot } from '@/services/schedule.service'
+import { getBusinessHours } from '@/services/booking.service'
 import { AppointmentRow } from '@/components/admin/AppointmentRow'
 import { AppointmentEditModal } from '@/components/admin/AppointmentEditModal'
 import { BlockSlotModal } from '@/components/admin/BlockSlotModal'
+import { DaySlotGrid } from '@/components/admin/DaySlotGrid'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/context/ToastContext'
 import { formatDateLong, formatDateShort, toDateInputValue } from '@/utils/format'
+import { computeDaySlots, type DaySlot } from '@/utils/daySlots'
 import type { AppointmentStatus, AppointmentWithRelations } from '@/types'
 
 export function AdminAgendaPage() {
@@ -27,9 +30,10 @@ export function AdminAgendaPage() {
 
   const dayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate())
   const dayEnd = addDays(dayStart, 1)
+  const dateKey = toDateInputValue(dayStart)
 
   const { data: appointments, isLoading } = useQuery({
-    queryKey: ['appointments', toDateInputValue(dayStart)],
+    queryKey: ['appointments', dateKey],
     queryFn: () => getAppointmentsInRange(dayStart.toISOString(), dayEnd.toISOString()),
   })
 
@@ -38,10 +42,17 @@ export function AdminAgendaPage() {
     queryFn: getBlockedSlots,
   })
 
+  const { data: businessHours } = useQuery({
+    queryKey: ['business-hours'],
+    queryFn: getBusinessHours,
+  })
+
   const invalidateAppointments = () => {
     queryClient.invalidateQueries({ queryKey: ['appointments'] })
     queryClient.invalidateQueries({ queryKey: ['dashboard'] })
   }
+
+  const invalidateBlocks = () => queryClient.invalidateQueries({ queryKey: ['blocked-slots'] })
 
   const handleQuickStatus = async (id: string, status: AppointmentStatus) => {
     try {
@@ -94,7 +105,7 @@ export function AdminAgendaPage() {
         is_full_day: input.isFullDay,
       })
       showToast('Horario bloqueado.', 'success')
-      queryClient.invalidateQueries({ queryKey: ['blocked-slots'] })
+      invalidateBlocks()
       setIsBlockModalOpen(false)
     } catch {
       showToast('No se pudo crear el bloqueo.', 'error')
@@ -107,10 +118,47 @@ export function AdminAgendaPage() {
     try {
       await deleteBlockedSlot(id)
       showToast('Bloqueo eliminado.', 'success')
-      queryClient.invalidateQueries({ queryKey: ['blocked-slots'] })
+      invalidateBlocks()
     } catch {
       showToast('No se pudo eliminar el bloqueo.', 'error')
     }
+  }
+
+  const todaysBusinessHours = businessHours?.find((h) => h.weekday === selectedDate.getDay())
+
+  const daySlots = computeDaySlots({
+    date: dateKey,
+    businessHours: todaysBusinessHours,
+    blockedSlots: blockedSlots ?? [],
+    appointments: appointments ?? [],
+  })
+
+  const handleQuickBlockSlot = async (time: string) => {
+    if (!todaysBusinessHours) return
+    if (!confirm(`¿Bloquear el horario de las ${time}?`)) return
+    const startsAt = new Date(`${dateKey}T${time}:00`)
+    const endsAt = new Date(startsAt.getTime() + (todaysBusinessHours.slot_interval_minutes || 30) * 60_000)
+    setIsSaving(true)
+    try {
+      await createBlockedSlot({
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        reason: null,
+        is_full_day: false,
+      })
+      showToast('Horario bloqueado.', 'success')
+      invalidateBlocks()
+    } catch {
+      showToast('No se pudo bloquear el horario.', 'error')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleUnblockSlot = async (slot: DaySlot) => {
+    if (!slot.blockedSlotId) return
+    if (!confirm(`¿Desbloquear el horario de las ${slot.time}?`)) return
+    await handleDeleteBlock(slot.blockedSlotId)
   }
 
   return (
@@ -118,7 +166,7 @@ export function AdminAgendaPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-ink-900">Agenda</h1>
-          <p className="text-sm text-ink-500">Gestioná los turnos día a día.</p>
+          <p className="text-sm text-ink-500">Gestioná los turnos y horarios día a día.</p>
         </div>
         <Button variant="secondary" onClick={() => setIsBlockModalOpen(true)} className="gap-2">
           <Lock className="size-4" />
@@ -155,6 +203,19 @@ export function AdminAgendaPage() {
       </Card>
 
       <div>
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-800">
+          <Clock className="size-4" /> Horarios del día
+        </h2>
+        <DaySlotGrid
+          slots={daySlots}
+          onSelectAvailable={handleQuickBlockSlot}
+          onSelectBooked={(slot) => slot.appointment && setEditing(slot.appointment)}
+          onSelectBlocked={handleUnblockSlot}
+        />
+      </div>
+
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-ink-800">Turnos reservados</h2>
         {isLoading && (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (

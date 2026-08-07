@@ -7,6 +7,7 @@ import {
   updateService,
   deleteService,
 } from '@/services/services.service'
+import { getServiceIdsWithAppointments } from '@/services/appointments.service'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -30,7 +31,14 @@ export function AdminServicesPage() {
     queryFn: getAllServices,
   })
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['services'] })
+  const { data: servicesWithAppointments } = useQuery({
+    queryKey: ['services', 'with-appointments'],
+    queryFn: getServiceIdsWithAppointments,
+  })
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['services'] })
+  }
 
   const createMutation = useMutation({
     mutationFn: (values: ServiceFormValues) =>
@@ -75,7 +83,8 @@ export function AdminServicesPage() {
       showToast('Servicio eliminado.', 'success')
       invalidate()
     },
-    onError: () => showToast('No se pudo eliminar el servicio.', 'error'),
+    onError: (error: Error) =>
+      showToast(error.message || 'No se pudo eliminar el servicio.', 'error'),
   })
 
   const toggleActiveMutation = useMutation({
@@ -110,61 +119,76 @@ export function AdminServicesPage() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {services?.map((service) => (
-          <Card key={service.id} className="overflow-hidden">
-            {service.image_url ? (
-              <img src={service.image_url} alt={service.name} className="h-36 w-full object-cover" />
-            ) : (
-              <ImagePlaceholder className="h-36 w-full" />
-            )}
-            <div className="space-y-2 p-4">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-medium text-ink-900">{service.name}</h3>
-                <Badge tone={service.is_active ? 'success' : 'neutral'}>
-                  {service.is_active ? 'Activo' : 'Inactivo'}
-                </Badge>
-              </div>
-              <p className="flex items-center justify-between text-sm text-ink-500">
-                <span>{formatDuration(service.duration_minutes)}</span>
-                <span className="font-semibold text-ink-900">{formatPrice(service.price)}</span>
-              </p>
+        {services?.map((service) => {
+          const hasAppointments = servicesWithAppointments?.has(service.id) ?? false
 
-              <div className="flex gap-2 pt-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="flex-1 gap-1.5"
-                  onClick={() => setEditingService(service)}
-                >
-                  <Pencil className="size-3.5" />
-                  Editar
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() =>
-                    toggleActiveMutation.mutate({ id: service.id, is_active: !service.is_active })
-                  }
-                >
-                  <EyeOff className="size-3.5" />
-                  {service.is_active ? 'Desactivar' : 'Activar'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (confirm(`¿Eliminar "${service.name}"? Esta acción no se puede deshacer.`)) {
-                      deleteMutation.mutate(service.id)
+          return (
+            <Card key={service.id} className="overflow-hidden">
+              {service.image_url ? (
+                <img src={service.image_url} alt={service.name} className="h-36 w-full object-cover" />
+              ) : (
+                <ImagePlaceholder className="h-36 w-full" />
+              )}
+              <div className="space-y-2 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-medium text-ink-900">{service.name}</h3>
+                  <Badge tone={service.is_active ? 'success' : 'neutral'}>
+                    {service.is_active ? 'Activo' : 'Inactivo'}
+                  </Badge>
+                </div>
+                <p className="flex items-center justify-between text-sm text-ink-500">
+                  <span>{formatDuration(service.duration_minutes)}</span>
+                  <span className="font-semibold text-ink-900">{formatPrice(service.price)}</span>
+                </p>
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex-1 gap-1.5"
+                    onClick={() => setEditingService(service)}
+                  >
+                    <Pencil className="size-3.5" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() =>
+                      toggleActiveMutation.mutate({ id: service.id, is_active: !service.is_active })
                     }
-                  }}
-                >
-                  <Trash2 className="size-3.5 text-red-600" />
-                </Button>
+                  >
+                    <EyeOff className="size-3.5" />
+                    {service.is_active ? 'Desactivar' : 'Activar'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={hasAppointments}
+                    title={
+                      hasAppointments
+                        ? 'Tiene turnos asociados: desactivalo en vez de eliminarlo.'
+                        : 'Eliminar servicio'
+                    }
+                    onClick={() => {
+                      if (confirm(`¿Eliminar "${service.name}"? Esta acción no se puede deshacer.`)) {
+                        deleteMutation.mutate(service.id)
+                      }
+                    }}
+                  >
+                    <Trash2 className={hasAppointments ? 'size-3.5 text-ink-300' : 'size-3.5 text-red-600'} />
+                  </Button>
+                </div>
+                {hasAppointments && (
+                  <p className="text-xs text-ink-400">
+                    Tiene turnos asociados — se puede desactivar pero no eliminar.
+                  </p>
+                )}
               </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          )
+        })}
       </div>
 
       {isModalOpen && (

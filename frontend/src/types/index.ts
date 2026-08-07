@@ -1,4 +1,5 @@
 export * from './database'
+import type { AppointmentStatus } from './database'
 
 export interface TimeSlot {
   time: string // 'HH:mm'
@@ -22,4 +23,21 @@ export interface YouTubeVideo {
   publishedAt: string
   duration: string
   url: string
+}
+
+export interface ClientProfile {
+  clientId: string
+  firstName: string
+  lastName: string
+  phone: string
+}
+
+export interface ClientAppointment {
+  id: string
+  serviceName: string
+  servicePrice: number
+  startsAt: string
+  endsAt: string
+  status: AppointmentStatus
+  notes: string | null
 }
